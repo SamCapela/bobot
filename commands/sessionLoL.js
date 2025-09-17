@@ -5,39 +5,31 @@ module.exports = async (interaction) => {
     await interaction.deferReply();
 
     const pseudo = interaction.options.getString('pseudo');
-    const gamertag = interaction.options.getString('gamertag');
     const riotApiKey = process.env.RIOT_API_KEY;
 
     try {
-        const riotPseudo = encodeURIComponent(pseudo);
-        const riotTag = encodeURIComponent(gamertag);
-
-        // Étape 1 : Récupérer le PUUID
+        // Récupérer le summoner par pseudo
         const summonerResponse = await axios.get(
-            `https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${riotPseudo}/${riotTag}`,
+            `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(pseudo)}`,
             { headers: { 'X-Riot-Token': riotApiKey } }
         );
-        const puuid = summonerResponse.data.puuid;
+        const { puuid } = summonerResponse.data;
 
-        // Étape 2 : Récupérer les 5 dernières parties
+        // Récupérer les 5 derniers matchs solo
         const matchResponse = await axios.get(
-            `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=5`,
+            `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&start=0&count=5`,
             { headers: { 'X-Riot-Token': riotApiKey } }
         );
-        const matches = matchResponse.data;
 
+        const matches = matchResponse.data;
         if (!matches.length) {
-            return interaction.editReply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setTitle('Session LoL')
-                        .setDescription(`Pas de session en cours pour ${pseudo}#${gamertag}`)
-                        .setColor('#FF0000')
-                ]
-            });
+            const embed = new EmbedBuilder()
+                .setTitle('Session LoL')
+                .setDescription(`Pas de session récente pour "${pseudo}".`)
+                .setColor('#FF0000');
+            return interaction.editReply({ embeds: [embed] });
         }
 
-        // Calcul du winrate
         let wins = 0, losses = 0;
         for (const matchId of matches) {
             const matchDetails = await axios.get(
@@ -50,20 +42,13 @@ module.exports = async (interaction) => {
         }
 
         const winrate = ((wins / (wins + losses)) * 100).toFixed(2);
-
         const embed = new EmbedBuilder()
             .setTitle('Session LoL')
-            .setDescription(`${pseudo}#${gamertag} : ${winrate}% (${wins} victoires / ${losses} défaites)`)
+            .setDescription(`${pseudo} : ${winrate}% (${wins} victoires / ${losses} défaites)`)
             .setColor('#00FF00')
             .setThumbnail('https://cdn.discordapp.com/attachments/LoL_icon.png');
 
         await interaction.editReply({ embeds: [embed] });
+
     } catch (error) {
-        console.error('Erreur sessionLoL:', error.response?.data || error.message);
-        const embed = new EmbedBuilder()
-            .setTitle('Erreur')
-            .setDescription(`Impossible de trouver ${pseudo}#${gamertag}. Vérifiez le pseudo et le tag exact.`)
-            .setColor('#FF0000');
-        await interaction.editReply({ embeds: [embed] });
-    }
-};
+        console.error('Erreur sessionLoL:', error.

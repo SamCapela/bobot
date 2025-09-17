@@ -5,45 +5,34 @@ module.exports = async (interaction) => {
     await interaction.deferReply();
 
     const pseudo = interaction.options.getString('pseudo');
-    const gamertag = interaction.options.getString('gamertag'); // Garder le tag exact
     const riotApiKey = process.env.RIOT_API_KEY;
 
     try {
-        // Encodage correct pour URL
-        const riotPseudo = encodeURIComponent(pseudo);
-        const riotTag = encodeURIComponent(gamertag);
-
-        // Étape 1 : Récupérer le PUUID
+        // Récupérer le summoner par pseudo
         const summonerResponse = await axios.get(
-            `https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${riotPseudo}/${riotTag}`,
+            `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(pseudo)}`,
             { headers: { 'X-Riot-Token': riotApiKey } }
         );
-        const puuid = summonerResponse.data.puuid;
+        const { id: summonerId, puuid } = summonerResponse.data;
 
-        // Étape 2 : Récupérer l'ID du summoner
-        const summonerDetails = await axios.get(
-            `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
-            { headers: { 'X-Riot-Token': riotApiKey } }
-        );
-        const summonerId = summonerDetails.data.id;
-
-        // Étape 3 : Récupérer le rang Solo/Duo
+        // Récupérer le rang Solo/Duo
         const rankResponse = await axios.get(
             `https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}`,
             { headers: { 'X-Riot-Token': riotApiKey } }
         );
+
         const soloDuo = rankResponse.data.find(entry => entry.queueType === 'RANKED_SOLO_5x5');
         const rank = soloDuo ? `${soloDuo.tier} ${soloDuo.rank}` : 'Non classé';
         const winrate = soloDuo ? ((soloDuo.wins / (soloDuo.wins + soloDuo.losses)) * 100).toFixed(2) : 'N/A';
 
-        // Étape 4 : Champions les plus joués (20 dernières parties)
+        // Récupérer les champions les plus joués (20 derniers matchs solo)
         const matchResponse = await axios.get(
             `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&start=0&count=20`,
             { headers: { 'X-Riot-Token': riotApiKey } }
         );
-        const matches = matchResponse.data;
+
         const championCounts = {};
-        for (const matchId of matches) {
+        for (const matchId of matchResponse.data) {
             const matchDetails = await axios.get(
                 `https://europe.api.riotgames.com/lol/match/v5/matches/${matchId}`,
                 { headers: { 'X-Riot-Token': riotApiKey } }
@@ -56,10 +45,10 @@ module.exports = async (interaction) => {
         const topChampions = Object.entries(championCounts)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 3)
-            .map(([champion, count]) => `${champion} (${((count / matches.length) * 100).toFixed(2)}%)`);
+            .map(([champion, count]) => `${champion} (${((count / matchResponse.data.length) * 100).toFixed(2)}%)`);
 
         const embed = new EmbedBuilder()
-            .setTitle(`Rang de ${pseudo}#${gamertag}`)
+            .setTitle(`Rang de ${pseudo}`)
             .addFields(
                 { name: 'Rang Solo/Duo', value: rank, inline: true },
                 { name: 'Winrate Solo/Duo', value: `${winrate}%`, inline: true },
@@ -69,11 +58,12 @@ module.exports = async (interaction) => {
             .setThumbnail('https://cdn.discordapp.com/attachments/LoL_icon.png');
 
         await interaction.editReply({ embeds: [embed] });
+
     } catch (error) {
         console.error('Erreur rankLoL:', error.response?.data || error.message);
         const embed = new EmbedBuilder()
             .setTitle('Erreur')
-            .setDescription(`Impossible de trouver ${pseudo}#${gamertag}. Vérifiez le pseudo et le tag exact.`)
+            .setDescription(`Impossible de trouver le joueur "${pseudo}". Vérifiez le pseudo exact.`)
             .setColor('#FF0000');
         await interaction.editReply({ embeds: [embed] });
     }
