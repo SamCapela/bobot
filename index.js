@@ -7,11 +7,10 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        // GatewayIntentBits.MessageContent, <-- retiré pour éviter l'erreur disallowed intents
     ],
 });
 
-// Commandes corrigées : noms en minuscules, pas d'espace
+// Commandes corrigées : un seul champ riot_id pour pseudo#tag
 const commands = [
     {
         name: 'invitelol',
@@ -21,16 +20,24 @@ const commands = [
         name: 'sessionlol',
         description: 'Affiche le winrate de la session en cours.',
         options: [
-            { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
-            { name: 'gamertag', type: 3, description: '#Gamertag', required: true },
+            {
+                name: 'riot_id',
+                type: 3,
+                description: 'Riot ID au format [Pseudo]#[Tag]',
+                required: true
+            },
         ],
     },
     {
         name: 'ranklol',
         description: 'Affiche le rang et les stats d\'un joueur.',
         options: [
-            { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
-            { name: 'gamertag', type: 3, description: '#Gamertag', required: true },
+            {
+                name: 'riot_id',
+                type: 3,
+                description: 'Riot ID au format [Pseudo]#[Tag]',
+                required: true
+            },
         ],
     },
 ];
