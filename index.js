@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -39,4 +41,4 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-client.login('VOTRE_TOKEN_BOT');
+client.login(process.env.DISCORD_TOKEN);
