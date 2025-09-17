@@ -1,73 +1,52 @@
-﻿const { EmbedBuilder } = require('discord.js');
-const axios = require('axios');
-
-const regionEndpoints = {
-    na: 'na1',
-    euw: 'euw1',
-    eune: 'eun1',
-    kr: 'kr',
-    jp: 'jp1',
-};
-
-const matchEndpointRegion = {
-    na: 'americas',
-    euw: 'europe',
-    eune: 'europe',
-    kr: 'asia',
-    jp: 'asia',
-};
+﻿const axios = require('axios');
+const { EmbedBuilder } = require('discord.js');
 
 module.exports = async (interaction) => {
     await interaction.deferReply();
 
     const pseudo = interaction.options.getString('pseudo');
-    const region = interaction.options.getString('region')?.toLowerCase() || 'euw';
+    const region = interaction.options.getString('region').toLowerCase();
     const riotApiKey = process.env.RIOT_API_KEY;
 
-    if (!regionEndpoints[region]) {
-        return interaction.editReply(`Région invalide. Utilisez: ${Object.keys(regionEndpoints).join(', ')}`);
-    }
-
     try {
-        // Étape 1 : Récupérer le summoner
-        const summonerResponse = await axios.get(
-            `https://${regionEndpoints[region]}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(pseudo)}`,
+        const summonerResp = await axios.get(
+            `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(pseudo)}`,
             { headers: { 'X-Riot-Token': riotApiKey } }
         );
-        const puuid = summonerResponse.data.puuid;
+        const summoner = summonerResp.data;
 
-        // Étape 2 : Récupérer les 5 derniers matchs Solo/Duo
-        const matchIdsResp = await axios.get(
-            `https://${matchEndpointRegion[region]}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&start=0&count=5`,
+        // Récupérer les 5 dernières parties Solo/Duo
+        const matchListResp = await axios.get(
+            `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${summoner.puuid}/ids?start=0&count=5`,
             { headers: { 'X-Riot-Token': riotApiKey } }
         );
-        const matches = matchIdsResp.data;
+        const matches = matchListResp.data;
 
         if (!matches.length) {
-            return interaction.editReply(`Pas de session en cours pour ${pseudo} sur ${region.toUpperCase()}.`);
+            return interaction.editReply(`Pas de parties récentes trouvées pour ${pseudo} sur ${region.toUpperCase()}.`);
         }
 
-        let wins = 0, losses = 0;
+        let wins = 0;
         for (const matchId of matches) {
-            const matchDetails = await axios.get(
-                `https://${matchEndpointRegion[region]}.api.riotgames.com/lol/match/v5/matches/${matchId}`,
+            const matchResp = await axios.get(
+                `https://${region}.api.riotgames.com/lol/match/v5/matches/${matchId}`,
                 { headers: { 'X-Riot-Token': riotApiKey } }
             );
-            const participant = matchDetails.data.info.participants.find(p => p.puuid === puuid);
-            if (participant.win) wins++;
-            else losses++;
+            const participant = matchResp.data.info.participants.find(p => p.puuid === summoner.puuid);
+            if (participant?.win) wins++;
         }
 
-        const winrate = ((wins / (wins + losses)) * 100).toFixed(2);
+        const winrate = ((wins / matches.length) * 100).toFixed(2);
         const embed = new EmbedBuilder()
             .setTitle(`Session LoL de ${pseudo} sur ${region.toUpperCase()}`)
-            .setDescription(`${winrate}% (${wins} victoires / ${losses} défaites)`)
+            .setDescription(`Winrate des ${matches.length} dernières parties : ${winrate}% (${wins}V/${matches.length - wins}D)`)
             .setColor('#00FF00');
 
         await interaction.editReply({ embeds: [embed] });
-
     } catch (error) {
         console.error('Erreur sessionLoL:', error.response?.data || error.message);
-        await interaction.editReply(`Impossible de trouver ${pseudo} sur la région ${region.toUpperCase()}. Vérifiez le pseudo et la région.`);
+        await interaction.editReply(
+            `Impossible de trouver ${pseudo} sur la région ${region.toUpperCase()}.\nVérifiez le pseudo et la région.`
+        );
     }
 };
