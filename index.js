@@ -9,7 +9,7 @@ const client = new Client({
     ],
 });
 
-// Commandes avec un seul champ `riot_id`
+// Commandes avec deux champs : pseudo + tag
 const commands = [
     {
         name: 'invitelol',
@@ -19,14 +19,16 @@ const commands = [
         name: 'sessionlol',
         description: 'Affiche le winrate de la session en cours.',
         options: [
-            { name: 'riot_id', type: 3, description: 'Format Pseudo#Tag', required: true },
+            { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
+            { name: 'tag', type: 3, description: 'Tag après #', required: true },
         ],
     },
     {
         name: 'ranklol',
         description: 'Affiche le rang et les stats d\'un joueur.',
         options: [
-            { name: 'riot_id', type: 3, description: 'Format Pseudo#Tag', required: true },
+            { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
+            { name: 'tag', type: 3, description: 'Tag après #', required: true },
         ],
     },
 ];

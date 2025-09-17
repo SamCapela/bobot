@@ -4,30 +4,20 @@ const axios = require('axios');
 module.exports = async (interaction) => {
     await interaction.deferReply();
 
-    const riotId = interaction.options.getString('riot_id'); // format: Pseudo#Tag
-    if (!riotId.includes('#')) {
-        return interaction.editReply({
-            embeds: [
-                new EmbedBuilder()
-                    .setTitle('Erreur')
-                    .setDescription('Format invalide. Utilisez [Pseudo]#[Tag]')
-                    .setColor('#FF0000')
-            ]
-        });
-    }
-
-    const [pseudo, tag] = riotId.split('#');
+    const pseudo = interaction.options.getString('pseudo');
+    const tag = interaction.options.getString('tag');
 
     try {
-        // Exemple de requête OP.GG (pseudo + tag)
-        const response = await axios.get(`https://na.op.gg/summoner/userName=${encodeURIComponent(pseudo)}`);
-        // TODO: parser les infos de l'HTML ou utiliser une vraie API si disponible
+        // Ici tu peux mettre un scraping OP.GG ou une API tierce
+        // Exemple fictif :
+        const rank = 'Gold IV'; // À remplacer par vrai scraping/API
+        const winrate = '52%';  // À remplacer par vrai scraping/API
 
         const embed = new EmbedBuilder()
             .setTitle(`Rang de ${pseudo}#${tag}`)
             .addFields(
-                { name: 'Rang Solo/Duo', value: 'Exemple Rang', inline: true },
-                { name: 'Winrate Solo/Duo', value: 'Exemple Winrate', inline: true }
+                { name: 'Rang Solo/Duo', value: rank, inline: true },
+                { name: 'Winrate Solo/Duo', value: winrate, inline: true }
             )
             .setColor('#FFD700');
 
@@ -37,7 +27,7 @@ module.exports = async (interaction) => {
             embeds: [
                 new EmbedBuilder()
                     .setTitle('Erreur')
-                    .setDescription(`Impossible de trouver ${riotId}. Vérifiez le pseudo et le tag exact.`)
+                    .setDescription(`Impossible de trouver ${pseudo}#${tag}. Vérifiez le pseudo et le tag exact.`)
                     .setColor('#FF0000')
             ]
         });
