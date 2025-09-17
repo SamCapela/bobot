@@ -1,15 +1,17 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
+const axios = require('axios');
 
 // Intents sûrs pour Render
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
+        // GatewayIntentBits.MessageContent retiré pour éviter l'erreur disallowed intents
     ],
 });
 
-// Commandes avec deux champs : pseudo + tag
+// Commandes corrigées avec pseudo + region
 const commands = [
     {
         name: 'invitelol',
@@ -20,7 +22,7 @@ const commands = [
         description: 'Affiche le winrate de la session en cours.',
         options: [
             { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
-            { name: 'tag', type: 3, description: 'Tag après #', required: true },
+            { name: 'region', type: 3, description: 'Région du joueur (ex: euw, na, kr)', required: true },
         ],
     },
     {
@@ -28,7 +30,7 @@ const commands = [
         description: 'Affiche le rang et les stats d\'un joueur.',
         options: [
             { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
-            { name: 'tag', type: 3, description: 'Tag après #', required: true },
+            { name: 'region', type: 3, description: 'Région du joueur (ex: euw, na, kr)', required: true },
         ],
     },
 ];
