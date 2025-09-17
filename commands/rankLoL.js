@@ -5,16 +5,17 @@ module.exports = async (interaction) => {
     await interaction.deferReply();
 
     const pseudo = interaction.options.getString('pseudo');
-    let gamertag = interaction.options.getString('gamertag');
-    gamertag = gamertag.replace('#', ''); // supprime le # si présent
+    const gamertag = interaction.options.getString('gamertag'); // Garder le tag exact
     const riotApiKey = process.env.RIOT_API_KEY;
 
-    console.log(`Recherche Riot API pour: pseudo="${pseudo}", tag="${gamertag}"`);
-
     try {
+        // Encodage correct pour URL
+        const riotPseudo = encodeURIComponent(pseudo);
+        const riotTag = encodeURIComponent(gamertag);
+
         // Étape 1 : Récupérer le PUUID
         const summonerResponse = await axios.get(
-            `https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(pseudo)}/${encodeURIComponent(gamertag)}`,
+            `https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${riotPseudo}/${riotTag}`,
             { headers: { 'X-Riot-Token': riotApiKey } }
         );
         const puuid = summonerResponse.data.puuid;
@@ -35,7 +36,7 @@ module.exports = async (interaction) => {
         const rank = soloDuo ? `${soloDuo.tier} ${soloDuo.rank}` : 'Non classé';
         const winrate = soloDuo ? ((soloDuo.wins / (soloDuo.wins + soloDuo.losses)) * 100).toFixed(2) : 'N/A';
 
-        // Étape 4 : Récupérer les champions les plus joués (20 dernières parties)
+        // Étape 4 : Champions les plus joués (20 dernières parties)
         const matchResponse = await axios.get(
             `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&start=0&count=20`,
             { headers: { 'X-Riot-Token': riotApiKey } }
@@ -48,7 +49,6 @@ module.exports = async (interaction) => {
                 { headers: { 'X-Riot-Token': riotApiKey } }
             );
             const participant = matchDetails.data.info.participants.find(p => p.puuid === puuid);
-            if (!participant) continue;
             const champion = participant.championName;
             championCounts[champion] = (championCounts[champion] || 0) + 1;
         }
@@ -70,10 +70,10 @@ module.exports = async (interaction) => {
 
         await interaction.editReply({ embeds: [embed] });
     } catch (error) {
-        console.error(error.response?.data || error.message);
+        console.error('Erreur rankLoL:', error.response?.data || error.message);
         const embed = new EmbedBuilder()
             .setTitle('Erreur')
-            .setDescription(`Impossible de trouver ${pseudo}#${gamertag}. Vérifiez le pseudo et le tag exact (chiffres après #).`)
+            .setDescription(`Impossible de trouver ${pseudo}#${gamertag}. Vérifiez le pseudo et le tag exact.`)
             .setColor('#FF0000');
         await interaction.editReply({ embeds: [embed] });
     }

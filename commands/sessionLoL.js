@@ -5,16 +5,16 @@ module.exports = async (interaction) => {
     await interaction.deferReply();
 
     const pseudo = interaction.options.getString('pseudo');
-    let gamertag = interaction.options.getString('gamertag');
-    gamertag = gamertag.replace('#', '');
+    const gamertag = interaction.options.getString('gamertag');
     const riotApiKey = process.env.RIOT_API_KEY;
 
-    console.log(`Vérification session pour: pseudo="${pseudo}", tag="${gamertag}"`);
-
     try {
+        const riotPseudo = encodeURIComponent(pseudo);
+        const riotTag = encodeURIComponent(gamertag);
+
         // Étape 1 : Récupérer le PUUID
         const summonerResponse = await axios.get(
-            `https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(pseudo)}/${encodeURIComponent(gamertag)}`,
+            `https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${riotPseudo}/${riotTag}`,
             { headers: { 'X-Riot-Token': riotApiKey } }
         );
         const puuid = summonerResponse.data.puuid;
@@ -27,14 +27,17 @@ module.exports = async (interaction) => {
         const matches = matchResponse.data;
 
         if (!matches.length) {
-            const embed = new EmbedBuilder()
-                .setTitle('Session LoL')
-                .setDescription(`Pas de session en cours pour ${pseudo}#${gamertag}`)
-                .setColor('#FF0000');
-            return interaction.editReply({ embeds: [embed] });
+            return interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle('Session LoL')
+                        .setDescription(`Pas de session en cours pour ${pseudo}#${gamertag}`)
+                        .setColor('#FF0000')
+                ]
+            });
         }
 
-        // Étape 3 : Calcul du winrate
+        // Calcul du winrate
         let wins = 0, losses = 0;
         for (const matchId of matches) {
             const matchDetails = await axios.get(
@@ -42,12 +45,12 @@ module.exports = async (interaction) => {
                 { headers: { 'X-Riot-Token': riotApiKey } }
             );
             const participant = matchDetails.data.info.participants.find(p => p.puuid === puuid);
-            if (!participant) continue;
             if (participant.win) wins++;
             else losses++;
         }
 
         const winrate = ((wins / (wins + losses)) * 100).toFixed(2);
+
         const embed = new EmbedBuilder()
             .setTitle('Session LoL')
             .setDescription(`${pseudo}#${gamertag} : ${winrate}% (${wins} victoires / ${losses} défaites)`)
@@ -56,10 +59,10 @@ module.exports = async (interaction) => {
 
         await interaction.editReply({ embeds: [embed] });
     } catch (error) {
-        console.error(error.response?.data || error.message);
+        console.error('Erreur sessionLoL:', error.response?.data || error.message);
         const embed = new EmbedBuilder()
             .setTitle('Erreur')
-            .setDescription(`Impossible de trouver ${pseudo}#${gamertag}. Vérifiez le pseudo et le tag exact (chiffres après #).`)
+            .setDescription(`Impossible de trouver ${pseudo}#${gamertag}. Vérifiez le pseudo et le tag exact.`)
             .setColor('#FF0000');
         await interaction.editReply({ embeds: [embed] });
     }
