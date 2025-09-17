@@ -1,24 +1,24 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, REST, Routes, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
 const axios = require('axios');
 
-// Intents nécessaires
+// Intents sûrs pour Render
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
+        // GatewayIntentBits.MessageContent, <-- retiré pour éviter l'erreur disallowed intents
     ],
 });
 
-// Enregistrer les commandes
+// Commandes corrigées : noms en minuscules, pas d'espace
 const commands = [
     {
-        name: 'inviteLoL',
+        name: 'invitelol',
         description: 'Crée une invitation pour rejoindre un lobby League of Legends.',
     },
     {
-        name: 'sessionLoL',
+        name: 'sessionlol',
         description: 'Affiche le winrate de la session en cours.',
         options: [
             { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
@@ -26,7 +26,7 @@ const commands = [
         ],
     },
     {
-        name: 'rankLoL',
+        name: 'ranklol',
         description: 'Affiche le rang et les stats d\'un joueur.',
         options: [
             { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
@@ -57,11 +57,11 @@ client.on('interactionCreate', async (interaction) => {
 
     const { commandName } = interaction;
 
-    if (commandName === 'inviteLoL') {
+    if (commandName === 'invitelol') {
         require('./commands/inviteLoL')(interaction);
-    } else if (commandName === 'sessionLoL') {
+    } else if (commandName === 'sessionlol') {
         require('./commands/sessionLoL')(interaction);
-    } else if (commandName === 'rankLoL') {
+    } else if (commandName === 'ranklol') {
         require('./commands/rankLoL')(interaction);
     }
 });
