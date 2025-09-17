@@ -1,6 +1,5 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
-const axios = require('axios');
 
 // Intents sûrs pour Render
 const client = new Client({
@@ -10,7 +9,7 @@ const client = new Client({
     ],
 });
 
-// Commandes corrigées : un seul champ riot_id pour pseudo#tag
+// Commandes avec un seul champ `riot_id`
 const commands = [
     {
         name: 'invitelol',
@@ -20,24 +19,14 @@ const commands = [
         name: 'sessionlol',
         description: 'Affiche le winrate de la session en cours.',
         options: [
-            {
-                name: 'riot_id',
-                type: 3,
-                description: 'Riot ID au format [Pseudo]#[Tag]',
-                required: true
-            },
+            { name: 'riot_id', type: 3, description: 'Format Pseudo#Tag', required: true },
         ],
     },
     {
         name: 'ranklol',
         description: 'Affiche le rang et les stats d\'un joueur.',
         options: [
-            {
-                name: 'riot_id',
-                type: 3,
-                description: 'Riot ID au format [Pseudo]#[Tag]',
-                required: true
-            },
+            { name: 'riot_id', type: 3, description: 'Format Pseudo#Tag', required: true },
         ],
     },
 ];
