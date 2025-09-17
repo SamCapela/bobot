@@ -4,8 +4,7 @@ const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
 // Intents sûrs pour Render
 const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.Guilds
     ],
 });
 
@@ -17,18 +16,18 @@ const commands = [
     },
     {
         name: 'sessionlol',
-        description: 'Affiche le winrate de la session en cours.',
+        description: 'Affiche le winrate des dernières parties d’un joueur.',
         options: [
-            { name: 'pseudo', type: 3, description: 'Pseudo exact du joueur', required: true },
-            { name: 'region', type: 3, description: 'Région (ex: EUW, NA, KR)', required: true },
+            { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
+            { name: 'tag', type: 3, description: 'Tag du joueur (#XXXX)', required: true },
         ],
     },
     {
         name: 'ranklol',
-        description: 'Affiche le rang et les stats d\'un joueur.',
+        description: 'Affiche le rang actuel d’un joueur.',
         options: [
-            { name: 'pseudo', type: 3, description: 'Pseudo exact du joueur', required: true },
-            { name: 'region', type: 3, description: 'Région (ex: EUW, NA, KR)', required: true },
+            { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
+            { name: 'tag', type: 3, description: 'Tag du joueur (#XXXX)', required: true },
         ],
     },
 ];
