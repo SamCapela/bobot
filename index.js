@@ -5,6 +5,7 @@ const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
     ],
 });
 
@@ -15,25 +16,25 @@ const commands = [
         description: 'Crée une invitation pour rejoindre un lobby League of Legends.',
     },
     {
-        name: 'ranklol',
-        description: 'Affiche le rang d’un joueur LoL (clé dev uniquement).',
+        name: 'sessionlol',
+        description: 'Affiche le winrate de la session en cours.',
         options: [
-            { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
-            { name: 'region', type: 3, description: 'Région du joueur (EUW, NA, etc.)', required: true },
+            { name: 'pseudo', type: 3, description: 'Pseudo exact du joueur', required: true },
+            { name: 'region', type: 3, description: 'Région (ex: EUW, NA, KR)', required: true },
         ],
     },
     {
-        name: 'sessionlol',
-        description: 'Affiche le winrate des dernières parties d’un joueur (clé dev uniquement).',
+        name: 'ranklol',
+        description: 'Affiche le rang et les stats d\'un joueur.',
         options: [
-            { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
-            { name: 'region', type: 3, description: 'Région du joueur (EUW, NA, etc.)', required: true },
+            { name: 'pseudo', type: 3, description: 'Pseudo exact du joueur', required: true },
+            { name: 'region', type: 3, description: 'Région (ex: EUW, NA, KR)', required: true },
         ],
     },
 ];
 
+// Déployer les commandes
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-
 (async () => {
     try {
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
@@ -43,10 +44,12 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     }
 })();
 
+// Événement prêt
 client.once('ready', () => {
     console.log(`Connecté en tant que ${client.user.tag}`);
 });
 
+// Gestion des interactions
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
 
@@ -54,11 +57,12 @@ client.on('interactionCreate', async (interaction) => {
 
     if (commandName === 'invitelol') {
         require('./commands/inviteLoL')(interaction);
-    } else if (commandName === 'ranklol') {
-        require('./commands/rankLoL')(interaction);
     } else if (commandName === 'sessionlol') {
         require('./commands/sessionLoL')(interaction);
+    } else if (commandName === 'ranklol') {
+        require('./commands/rankLoL')(interaction);
     }
 });
 
+// Connexion du bot
 client.login(process.env.DISCORD_TOKEN);
