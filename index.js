@@ -1,94 +1,42 @@
-require('dotenv').config();
-const { Client, GatewayIntentBits, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-const client = new Client({
-    intents: [GatewayIntentBits.Guilds],
-});
+client.commands = new Collection();
+const commandsPath = path.join(__dirname, 'commands');
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
-// Définition des commandes slash
-const commands = [
-    {
-        name: 'ranklol',
-        description: 'Affiche les rangs Solo/Duo et Flex d\'un joueur LoL.',
-        options: [
-            { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
-            {
-                name: 'region',
-                type: 3,
-                description: 'Région (ex: euw, na, kr)',
-                required: true,
-                choices: [
-                    { name: 'EUW', value: 'euw1' },
-                    { name: 'NA', value: 'na1' },
-                    { name: 'KR', value: 'kr' },
-                    { name: 'EUNE', value: 'eun1' },
-                    { name: 'BR', value: 'br1' },
-                    { name: 'LAN', value: 'la1' },
-                    { name: 'LAS', value: 'la2' },
-                    { name: 'OCE', value: 'oc1' },
-                    { name: 'TR', value: 'tr1' },
-                    { name: 'RU', value: 'ru' },
-                    { name: 'JP', value: 'jp1' },
-                ],
-            },
-        ],
-    },
-    {
-        name: 'sessionlol',
-        description: 'Affiche les stats des 20 dernières parties d\'un joueur LoL.',
-        options: [
-            { name: 'pseudo', type: 3, description: 'Pseudo du joueur', required: true },
-            {
-                name: 'region',
-                type: 3,
-                description: 'Région (ex: euw, na, kr)',
-                required: true,
-                choices: [
-                    { name: 'EUW', value: 'euw1' },
-                    { name: 'NA', value: 'na1' },
-                    { name: 'KR', value: 'kr' },
-                    { name: 'EUNE', value: 'eun1' },
-                    { name: 'BR', value: 'br1' },
-                    { name: 'LAN', value: 'la1' },
-                    { name: 'LAS', value: 'la2' },
-                    { name: 'OCE', value: 'oc1' },
-                    { name: 'TR', value: 'tr1' },
-                    { name: 'RU', value: 'ru' },
-                    { name: 'JP', value: 'jp1' },
-                ],
-            },
-        ],
-    },
-];
+for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const command = require(filePath);
+    client.commands.set(command.data.name, command);
+}
 
-const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+client.once('ready', async () => {
+    const CLIENT_ID = client.user.id; // Remplacez par votre client ID si besoin
+    const rest = new REST().setToken('VOTRE_TOKEN_BOT'); // Remplacez par votre token
 
-// Enregistrement des commandes
-(async () => {
     try {
-        await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
-        console.log('Commandes enregistrées avec succès.');
+        await rest.put(Routes.applicationCommands(CLIENT_ID), {
+            body: client.commands.map(command => command.data.toJSON()),
+        });
+        console.log('Commandes slash enregistrées !');
     } catch (error) {
-        console.error('Erreur lors de l\'enregistrement des commandes:', error);
-    }
-})();
-
-// Gestion des interactions
-client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isCommand()) return;
-
-    const { commandName } = interaction;
-
-    if (commandName === 'ranklol') {
-        await require('./commands/rankLoL')(interaction);
-    } else if (commandName === 'sessionlol') {
-        await require('./commands/sessionLoL')(interaction);
+        console.error(error);
     }
 });
 
-// Connexion du bot
-client.once('ready', () => {
-    console.log(`Connecté en tant que ${client.user.tag}`);
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
+    try {
+        await command.execute(interaction);
+    } catch (error) {
+        console.error(error);
+        await interaction.reply({ content: 'Erreur lors de l\'exécution de la commande !', ephemeral: true });
+    }
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.login('VOTRE_TOKEN_BOT');
